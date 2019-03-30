@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>pyWebPlayer</title>
+    {% load static %}
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="{% static 'pyWebPlayer/js/soundmanager2.js' %}"></script>
+    <style>
+      [data-musicUrl], [data-dirUrl]{
+        border: 1px solid grey;
+        padding: 6px;
+        margin: 1px;
+        border-radius: 7px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="nameOfTrack">Name of track</div>
+    <div><span id="timeCurrent">00:00</span><input id="progress" type="range" min="0" max="100" step="0.01" value="0"><span id="timeEnd">00:00</span></div>
+    <button id="playPause">play</button>
+    <button id="updateDB">update db</button>
+    <div id="playlist"></div>
+    <script>
+      function getFiles(){
+        $.ajax({
+          url: "getFiles/",
+        	dataType: "html",
+          type: "GET",
+          data: ({path: getCookie("activeDir")}),
+        	success: function(data){
+              $("#playlist").html(data);
+              $("[data-musicUrl]").on("click", function() {
+                player.stop();
+                player.url = $(this).attr("data-musicUrl");
+                player.play();
+                $("#playPause").text("pause");
+                $("#nameOfTrack").text($(this).find("span").text());
+              });
+              $("[data-dirUrl]").on("click", function() {
+                document.cookie = "activeDir=" + $(this).attr("data-dirUrl");
+                getFiles();
+              });
+          }
+        });
+      }
+
+      function setPos(){
+        player.setPosition(player.duration * document.getElementById("progress").value / 100);
+      }
+
+      function playPause(){
+        if(player.paused){
+          player.play();
+          $("#playPause").text("pause");
+        }else{
+          player.pause();
+          $("#playPause").text("play");
+        }
+      }
+
+      function getCookie(name) {
+        var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
+        return matches ? decodeURIComponent(matches[1]) : undefined;
+      }
+
+      function toMMSS(sec){
+        var sec_num = parseInt(sec, 10);
+        var minutes = Math.floor(sec_num / 60);
+        var seconds = sec_num - (minutes * 60);
+        if (minutes < 10) {
+          minutes = "0" + minutes;
+        }
+        if (seconds < 10) {
+          seconds = "0" + seconds;
+        }
+        return minutes + ':' + seconds;
+      }
+
+      if(getCookie("activeDir") == undefined){
+        document.cookie = "activeDir={% static 'pyWebPlayer/muslink' %}";
+      }
+
+      var player;
+      soundManager.setup({
+        url: "{% static 'pyWebPlayer/swf/soundmanager2.swf' %}",
+        onready: function() {
+          player = soundManager.createSound({
+            whileplaying: function() {
+              $("#timeCurrent").text(toMMSS(Math.round(this.position / 1000)));
+              document.getElementById("progress").value = Math.round(this.position/this.duration*10000)/100;
+            },
+            onload: function() {
+              $("#timeEnd").text(toMMSS(Math.round(this.duration / 1000)));
+            }
+          });
+        }
+      });
+
+      $("#updateDB").on("click", function() {
+        $.ajax({
+          url: "updateDBRequest/",
+        	success: function(data){
+            alert(data);
+            document.cookie = "activeDir={% static 'pyWebPlayer/muslink' %}";
+            getFiles();
+          }
+        });
+      });
+
+      $("#playPause").on("click", playPause);
+      $("#progress").on('input', setPos);
+      getFiles();
+    </script>
+  </body>
+</html>
