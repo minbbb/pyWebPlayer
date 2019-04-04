@@ -1,5 +1,5 @@
 # pyWebPlayer
-A music web player with a python backend
+Web Music Player with Django(python) Backend
 ## How to use
 1. Open file  **pyWebPlayer/pyWebPlayerProject/pyWebPlayer/settings.py**
 2. Edit the value of the variable **MUSIC_LINK**, on the path where your music directory is located
